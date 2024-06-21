@@ -26,7 +26,7 @@ T_cykl = (2*np.pi*m_e)/(e*B)  #okres ruchu cyklotronowego
 time = 2*T_cykl
 
 #dt = T / 1000  
-dt = 0.0000000002
+dt = 0.00000000002
 
 def E(kx, ky):
     return E_c + 2 * (-h**2 / (2 * m_e * a**2)) * (np.cos(kx * a) + np.cos(ky * a))
@@ -73,8 +73,8 @@ ky_values = []
 #poczatkowe wartosci
 x_0 = 0
 y_0 = 0
-kx_0 = 1e9
-ky_0 = 1e9
+kx_0 = 0.1e9
+ky_0 = 0.1e9
 
 x_1 = x_0
 y_1 = y_0
@@ -126,6 +126,7 @@ plt.show()
 
 
 # Mapa y(x)
+#    plt.axes().set_aspect('equal')
 plt.scatter(np.array(x_values)/ (4*V_ss_sigma*a/h/w_b), np.array(y_values)/ (4*V_ss_sigma*a/h/w_b), c=np.array(y_values), cmap='viridis')
 plt.xlabel('x')
 plt.ylabel('y')
@@ -144,3 +145,13 @@ plt.grid(True)
 plt.show()
 
 
+# wykres y(x) i ky(x) nalozonych na siebie
+plt.figure(figsize=(8, 6))
+plt.scatter(np.array(x_values)/(4*V_ss_sigma*a/h/w_b), np.array(y_values)/(4*V_ss_sigma*a/h/w_b), c='blue', label='y(x)')
+plt.scatter(np.array(kx_values)/(w_b*T_cykl/a), np.array(ky_values)/(w_b*T_cykl/a), c='red', label='ky(kx)')
+plt.xlabel('x / kx')
+plt.ylabel('y / ky')
+plt.title('y(x) i ky(kx)')
+plt.legend()
+plt.grid(True)
+plt.show()
