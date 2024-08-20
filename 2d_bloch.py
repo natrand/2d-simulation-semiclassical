@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Parametry symulacji
-
 h = 6.58e-16  # (eV*s)
 e = 1.6e-19  # (C)
 m_e = 0.067*9.1e-31  # masa elektronu * 0.067 (kg)
@@ -14,19 +13,19 @@ B = 0.001
 
 V_ss_sigma = (-h**2 / (2 * m_e * a**2))
 
-
 # częstość oscylacji Blocha
 w_b =  e * E_e * a / h
 
 T = 1
-#T = 2 * np.pi / w_b  
-#time =  1e-7 #3 * T  
+# T = 2 * np.pi / w_b  
+# time =  1e-7 #3 * T  
 
-T_cykl = (2*np.pi*m_e)/(e*B)  #okres ruchu cyklotronowego
+T_cykl = (2*np.pi*m_e)/(e*B)  # okres ruchu cyklotronowego
 time = 2*T_cykl
 
-#dt = T / 1000  
-dt = 0.00000000002
+# dt = T / 1000  
+dt = 0.0000000000002
+
 
 def E(kx, ky):
     return E_c + 2 * (-h**2 / (2 * m_e * a**2)) * (np.cos(kx * a) + np.cos(ky * a))
@@ -37,22 +36,31 @@ def dE_dkx(kx, ky):
 def dE_dky(kx, ky):
     return (E(kx, ky + dk) - E(kx, ky - dk)) / (2 * dk)
 
-#wzor 6.63 rownania x z kropka itd
-
 def dx_dt(t, kx, ky): # x
     return 1 / h * dE_dkx(kx, ky)
 
-def dy_dt(t, kx, ky): #y
-    return 1 / h * dE_dky(kx,ky)
+def dy_dt(t, kx, ky): # y
+    return 1 / h * dE_dky(kx, ky)
 
-def dkx_dt(t, vx, vy,kx, ky):
+def dkx_dt(t, vx, vy, kx, ky):
     vy = 1 / h * dE_dky(kx, ky)
     return -e / h * (E_e + B * vy)
 
 def dky_dt(t, vx, vy, kx, ky):
-    vx = 1 / h * dE_dkx(kx,ky)
+    vx = 1 / h * dE_dkx(kx, ky)
     return -e / h * (E_e - B * vx)
 
+def promien_cyklotronowy(kx, ky):
+    vx = 1 / h * dE_dkx(kx, ky)
+    vy = 1 / h * dE_dky(kx, ky)
+    v_prostopadla = np.sqrt(vx**2 + vy**2)  
+    return (v_prostopadla * m_e) / (e * B)
+
+def promien_cyklotronowy_teoretyczny(kx, ky):
+    vx = 1 / h * dE_dkx(kx, ky)
+    vy = 1 / h * dE_dky(kx, ky)
+    v_prostopadla = np.sqrt(vx**2 + vy**2)  
+    return (m_e * v_prostopadla) / (e * B)
 
 
 # Metoda RK4
@@ -68,13 +76,20 @@ x_values = []
 y_values = []
 kx_values = []
 ky_values = []
+vx_values = []
+vy_values = []
 
-
-#poczatkowe wartosci
+# Początkowe wartości
 x_0 = 0
 y_0 = 0
 kx_0 = 0.1e9
 ky_0 = 0.1e9
+
+# Obliczenie promienia cyklotronowego i porownanie wynikow
+r_c = promien_cyklotronowy(kx_0, ky_0)
+r_c_teoretyczny = promien_cyklotronowy_teoretyczny(kx_0, ky_0)
+print(f"Promień cyklotronowy: {r_c:.3e}")
+print(f"Promień cyklotronowy teoretyczny: {r_c_teoretyczny:.3e}")
 
 x_1 = x_0
 y_1 = y_0
@@ -91,32 +106,43 @@ for t in time_values:
     ky_values.append(ky_1)
     
     x_1, y_1, kx_1, ky_1 = RK4_step(f, t, [x_1, y_1, kx_1, ky_1], dt)
+    
+    # Oblicz prędkości vx, vy na podstawie kx, ky
+    vx = 1 / h * dE_dkx(kx_1, ky_1)
+    vy = 1 / h * dE_dky(kx_1, ky_1)
+    vx_values.append(vx)
+    vy_values.append(vy)
+
+
+
+# Wykresy
+
 plt.figure(figsize=(10, 8))
 
-# Wykres vx(t) ---> x(t)
+# Wykres x(t)
 plt.subplot(4, 1, 1)
-plt.plot(np.array(time_values)/T_cykl, np.array(x_values)/ (4*V_ss_sigma*a/h/w_b) )
+plt.plot(np.array(time_values)/T_cykl, np.array(x_values) / (4 * V_ss_sigma * a / h / w_b))
 plt.xlabel('t (s)')
 plt.ylabel('x(t)')
 plt.grid(True)
 
-# Wykres vy(t) ---> y(t)
+# Wykres y(t)
 plt.subplot(4, 1, 2)
-plt.plot(np.array(time_values)/T_cykl, np.array(y_values)/ (4*V_ss_sigma*a/h/w_b) )
+plt.plot(np.array(time_values)/T_cykl, np.array(y_values) / (4 * V_ss_sigma * a / h / w_b))
 plt.xlabel('t (s)')
 plt.ylabel('y(t)')
 plt.grid(True)
 
 # Wykres kx(t)
 plt.subplot(4, 1, 3)
-plt.plot(np.array(time_values)/T_cykl, np.array(kx_values)/(w_b*T/a))
+plt.plot(np.array(time_values)/T_cykl, np.array(kx_values) / (w_b * T / a))
 plt.xlabel('t (s)')
 plt.ylabel('kx(t)')
 plt.grid(True)
 
 # Wykres ky(t)
 plt.subplot(4, 1, 4)
-plt.plot(np.array(time_values)/T_cykl, np.array(ky_values)/(w_b*T/a))
+plt.plot(np.array(time_values)/T_cykl, np.array(ky_values) / (w_b * T / a))
 plt.xlabel('t (s)')
 plt.ylabel('ky(t)')
 plt.grid(True)
@@ -124,10 +150,8 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
-
 # Mapa y(x)
-#    plt.axes().set_aspect('equal')
-plt.scatter(np.array(x_values)/ (4*V_ss_sigma*a/h/w_b), np.array(y_values)/ (4*V_ss_sigma*a/h/w_b), c=np.array(y_values), cmap='viridis')
+plt.scatter(np.array(x_values) / (4 * V_ss_sigma * a / h / w_b), np.array(y_values) / (4 * V_ss_sigma * a / h / w_b), c=np.array(y_values), cmap='viridis')
 plt.xlabel('x')
 plt.ylabel('y')
 plt.title('Mapa y(x)')
@@ -136,7 +160,7 @@ plt.grid(True)
 plt.show()
 
 # Mapa ky(kx)
-plt.scatter(np.array(kx_values)/(w_b*T/a), np.array(ky_values)/(w_b*T/a), c=np.array(ky_values), cmap='viridis')
+plt.scatter(np.array(kx_values) / (w_b * T_cykl / a), np.array(ky_values) / (w_b * T_cykl / a), c=np.array(ky_values), cmap='viridis')
 plt.xlabel('kx')
 plt.ylabel('ky')
 plt.title('Mapa ky(kx)')
@@ -144,11 +168,10 @@ plt.colorbar(label='ky')
 plt.grid(True)
 plt.show()
 
-
-# wykres y(x) i ky(x) nalozonych na siebie
+# Wykres y(x) i ky(x) nałożonych na siebie
 plt.figure(figsize=(8, 6))
-plt.scatter(np.array(x_values)/(4*V_ss_sigma*a/h/w_b), np.array(y_values)/(4*V_ss_sigma*a/h/w_b), c='blue', label='y(x)')
-plt.scatter(np.array(kx_values)/(w_b*T_cykl/a), np.array(ky_values)/(w_b*T_cykl/a), c='red', label='ky(kx)')
+plt.scatter(np.array(x_values) / (4 * V_ss_sigma * a / h / w_b), np.array(y_values) / (4 * V_ss_sigma * a / h / w_b), c='blue', label='y(x)')
+plt.scatter(np.array(kx_values) / (w_b * T_cykl / a), np.array(ky_values) / (w_b * T_cykl / a), c='red', label='ky(kx)')
 plt.xlabel('x / kx')
 plt.ylabel('y / ky')
 plt.title('y(x) i ky(kx)')
