@@ -15,8 +15,9 @@ V_ss_sigma = (-h**2 / (2 * m_e * a**2))
 w_b = e * E_e * a / h
 T = 1
 T_cykl = (2 * np.pi * m_e) / (e * B)  # okres ruchu cyklotronowego
-time = 2 * T_cykl
+time = 4 * T_cykl
 dt = 0.00000000002
+dt = 1e-13
 
 #def potencjal(x, y):
 #    return V_max / (np.exp((y - y_bariera) / step) + 1)
@@ -28,7 +29,7 @@ dt = 0.00000000002
 #    return E_x, E_y
 
 def E(kx, ky):
-    return E_c + 2 * (-h**2 / (2 * m_e * a**2)) * (np.cos(kx * a) + np.cos(ky * a))
+    return E_c + 2 * (-h**2 / (2 * m_e * a**2)*e)  * (np.cos(kx * a) + np.cos(ky * a))
 
 def dE_dkx(kx, ky):
     return (E(kx + dk, ky) - E(kx - dk, ky)) / (2 * dk)
@@ -44,11 +45,11 @@ def dy_dt(t, kx, ky):
 
 def dkx_dt(t, vx, vy, kx, ky):
     vy = 1 / h * dE_dky(kx, ky)
-    return -e / h * (E_e + B * vy)
+    return -1 / h * (E_e + B * vy)
 
 def dky_dt(t, vx, vy, kx, ky):
     vx = 1 / h * dE_dkx(kx, ky)
-    return -e / h * (E_e - B * vx)
+    return -1 / h * (E_e - B * vx)
 
 def kolizja(x, y, vx, vy):
     print(f"==== Kolizja: Polozenie: x={x:.2e}, y={y:.2e}, Predkosc: vx={vx:.2e}, vy={vy:.2e}")
@@ -119,7 +120,7 @@ for t in time_values:
     ky_values.append(ky_1)
     
     x_1, y_1, kx_1, ky_1 = RK4_step(f, t, [x_1, y_1, kx_1, ky_1], dt)
-    if y_1 < -1e-3:  # Sprawdzenie kolizji
+    if y_1 < -1e-7:  # Sprawdzenie kolizji L = 1e-7
         # Powrot do stanu przed kolizja
         x_1, y_1, kx_1, ky_1 = x_values[-1], y_values[-1], kx_values[-1], ky_values[-1]
         
@@ -127,10 +128,11 @@ for t in time_values:
         dt_prim = dt/10
         for _ in range(10):
             x_1, y_1, kx_1, ky_1 = RK4_step(f, t, [x_1, y_1, kx_1, ky_1], dt_prim)
-            if y_1 < -1e-3:
+            if y_1 < -1e-7:
                 # Odbicie i zmiana predkosci
-                x_1, y_1, kx_1, ky_1 = warunki(x_1, y_1, kx_1, ky_1, 1e-3, dt_prim, x_values[-1], y_values[-1], kx_values[-1], ky_values[-1])
+                x_1, y_1, kx_1, ky_1 = warunki(x_1, y_1, kx_1, ky_1, 1e-7, dt_prim, x_values[-1], y_values[-1], kx_values[-1], ky_values[-1])
                 break
+        
 
 plt.figure(figsize=(10, 8))
 
